@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>买手订单填报</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+  .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  h1 { font-size: 20px; text-align: center; padding: 18px 0 6px; }
+  .subtitle { text-align: center; color: #999; font-size: 13px; margin-bottom: 16px; }
+  label { display: block; font-size: 14px; color: #555; margin: 12px 0 6px; font-weight: 500; }
+  input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: #fafafa; }
+  textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #3370ff; background: #fff; }
+  .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+  .btn-primary { background: #3370ff; color: #fff; }
+  .btn-primary:active { background: #2860e0; }
+  .btn-danger { background: #f54a45; color: #fff; padding: 8px 14px; font-size: 14px; width: auto; display: inline-block; margin-top: 0; }
+  .btn-outline { background: #fff; color: #3370ff; border: 1px solid #3370ff; padding: 8px 14px; font-size: 14px; width: auto; display: inline-block; margin-top: 0; }
+  .tabs { display: flex; background: #fff; border-radius: 12px; padding: 4px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .tab { flex: 1; text-align: center; padding: 10px; border-radius: 9px; font-size: 15px; color: #666; cursor: pointer; }
+  .tab.active { background: #3370ff; color: #fff; font-weight: 600; }
+  .banner { background: linear-gradient(135deg, #3370ff, #6a9bff); color: #fff; border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; font-size: 15px; }
+  .banner b { font-size: 17px; }
+  .item-card { border: 1px dashed #c9d4e5; border-radius: 10px; padding: 14px; margin-top: 12px; position: relative; background: #fbfcff; }
+  .item-card .del { position: absolute; top: 8px; right: 10px; color: #f54a45; font-size: 14px; background: none; border: none; }
+  .add-item { color: #3370ff; text-align: center; padding: 12px; border: 1px dashed #3370ff; border-radius: 10px; margin-top: 12px; font-size: 15px; cursor: pointer; background: #fff; }
+  .msg { text-align: center; padding: 10px; font-size: 14px; border-radius: 8px; margin-top: 12px; display: none; }
+  .msg.error { display: block; background: #fee; color: #d4380d; }
+  .msg.ok { display: block; background: #f6ffed; color: #389e0d; }
+  .order { border-bottom: 1px solid #f0f0f0; padding: 14px 0; }
+  .order:last-child { border-bottom: none; }
+  .order .row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin: 4px 0; gap: 8px; }
+  .order .muted { color: #999; font-size: 12px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; white-space: nowrap; }
+  .badge.ok { background: #e8f7ee; color: #389e0d; }
+  .badge.ret { background: #fee; color: #d4380d; }
+  .pwd-chip { display: inline-flex; align-items: center; gap: 6px; background: #f0f2f5; border-radius: 6px; padding: 3px 10px; font-family: monospace; font-size: 14px; }
+  .pwd-chip button { border: none; background: none; color: #3370ff; font-size: 13px; cursor: pointer; }
+  .mask { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 99; }
+  .mask.show { display: flex; }
+  .dialog { background: #fff; border-radius: 14px; padding: 24px 20px; width: 82%; max-width: 340px; text-align: center; }
+  .dialog p { font-size: 16px; margin-bottom: 20px; line-height: 1.6; }
+  .dialog .ops { display: flex; gap: 12px; }
+  .dialog .ops .btn { margin-top: 0; flex: 1; }
+  .btn-ghost { background: #f0f2f5; color: #333; }
+  .empty { text-align: center; color: #999; padding: 30px 0; font-size: 14px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<h1>📦 买手订单填报</h1>
+<p class="subtitle">下单后请妥善保管你的姓名，用于查询与补单号</p>
+
+<!-- 口令页 -->
+<div class="container" id="gateView">
+  <div class="card">
+    <label>活动口令</label>
+    <input type="password" id="pwdInput" placeholder="请输入本次活动的口令" autocomplete="off">
+    <button class="btn btn-primary" onclick="login()">进 入</button>
+    <div class="msg" id="gateMsg"></div>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div class="container hidden" id="mainView">
+  <div class="banner">当前活动：<b id="actName"></b></div>
+  <div class="tabs">
+    <div class="tab active" data-v="fill" onclick="switchTab('fill')">填报订单</div>
+    <div class="tab" data-v="my" onclick="switchTab('my')">我的订单</div>
+    <div class="tab" data-v="admin" onclick="switchTab('admin')">管理</div>
+  </div>
+
+  <!-- 填报 -->
+  <div id="tab-fill">
+    <div class="card">
+      <label>下单人姓名 *</label>
+      <input id="buyerName" placeholder="你的真实姓名或代号">
+      <label>收货地址 *</label>
+      <textarea id="buyerAddr" placeholder="省市区 + 详细地址 + 收件人电话"></textarea>
+    </div>
+    <div id="itemsBox"></div>
+    <div class="add-item" onclick="addItem()">＋ 再加一件商品</div>
+    <button class="btn btn-primary" onclick="submitOrders()">提交订单</button>
+    <div class="msg" id="fillMsg"></div>
+  </div>
+
+  <!-- 我的订单 -->
+  <div id="tab-my" class="hidden">
+    <div class="card">
+      <label>下单人姓名</label>
+      <input id="queryName" placeholder="输入填报时用的姓名">
+      <button class="btn btn-primary" onclick="loadMy()">查询我的订单</button>
+      <div class="msg" id="myMsg"></div>
+    </div>
+    <div class="card hidden" id="myList"><div id="myOrders"></div></div>
+  </div>
+
+  <!-- 管理 -->
+  <div id="tab-admin" class="hidden">
+    <div class="card" id="adminGate">
+      <label>管理口令</label>
+      <input type="password" id="adminPwd" placeholder="管理员专用">
+      <button class="btn btn-primary" onclick="adminLogin()">进入管理</button>
+      <div class="msg" id="adminMsg"></div>
+    </div>
+    <div id="adminPanel" class="hidden">
+      <div class="card">
+        <label>新建采购活动</label>
+        <input id="newActName" placeholder="活动名称，例如：0827-iPhone16专场">
+        <label>活动口令（留空则自动生成）</label>
+        <input id="newActPwd" placeholder="给买手的口令，如 iphone827">
+        <button class="btn btn-primary" onclick="createActivity()">创建活动（自动建表）</button>
+      </div>
+      <div class="card">
+        <label>活动列表</label>
+        <div id="adminActs"><div class="empty">加载中…</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 确认弹窗 -->
+<div class="mask" id="mask">
+  <div class="dialog">
+    <p id="maskText"></p>
+    <div class="ops">
+      <button class="btn btn-ghost" onclick="closeMask()">取 消</button>
+      <button class="btn btn-primary" id="maskYes">确 认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let PASSWORD = sessionStorage.getItem('bp') || '';
+let ADMIN_PWD = sessionStorage.getItem('ap') || '';
+let ACTIVITY = sessionStorage.getItem('an') || '';
+
+// API 地址：网页和接口不同域名，指向云函数的函数 URL
+const API_BASE = 'https://1475800590-j8979ywfks.ap-shanghai.tencentscf.com';
+
+const $ = (id) => document.getElementById(id);
+
+async function api(route, body) {
+  const res = await fetch(API_BASE + '/api/' + route, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then((r) => r.json());
+  if (!res.ok) throw new Error(res.error || '请求失败');
+  return res.data;
+}
+
+function showMsg(id, text, ok) {
+  const el = $(id);
+  el.textContent = text;
+  el.className = 'msg ' + (ok ? 'ok' : 'error');
+}
+
+function confirmDialog(text) {
+  return new Promise((resolve) => {
+    $('maskText').textContent = text;
+    $('mask').classList.add('show');
+    $('maskYes').onclick = () => { closeMask(); resolve(true); };
+    $('mask').onclick = (e) => { if (e.target === $('mask')) { closeMask(); resolve(false); } };
+  });
+}
+function closeMask() { $('mask').classList.remove('show'); }
+
+// ---------- 口令登录（口令即活动） ----------
+async function login() {
+  const pwd = $('pwdInput').value.trim();
+  if (!pwd) return showMsg('gateMsg', '请输入口令');
+  try {
+    const { activity } = await api('login', { password: pwd });
+    PASSWORD = pwd;
+    ACTIVITY = activity;
+    sessionStorage.setItem('bp', pwd);
+    sessionStorage.setItem('an', activity);
+    enterMain();
+  } catch (e) { showMsg('gateMsg', e.message); }
+}
+
+function enterMain() {
+  $('gateView').classList.add('hidden');
+  $('mainView').classList.remove('hidden');
+  $('actName').textContent = ACTIVITY;
+  if (!$('itemsBox').children.length) addItem();
+}
+
+function switchTab(v) {
+  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.v === v));
+  ['fill', 'my', 'admin'].forEach((k) => $('tab-' + k).classList.toggle('hidden', k !== v));
+}
+
+// ---------- 填报 ----------
+function addItem() {
+  const div = document.createElement('div');
+  div.className = 'item-card';
+  div.innerHTML = `
+    <button class="del" onclick="this.parentElement.remove()">✕ 删除</button>
+    <label>商品类别</label>
+    <select class="it-cat">
+      <option>手机</option><option>平板</option><option>电脑</option><option>其他</option>
+    </select>
+    <label>商品参数</label>
+    <textarea class="it-params" placeholder="品牌 / 型号 / 颜色 / 内存 / 版本等，尽量写详细"></textarea>
+    <label>下单价格（元）</label>
+    <input class="it-price" type="number" inputmode="decimal" placeholder="0.00">
+  `;
+  $('itemsBox').appendChild(div);
+}
+
+async function submitOrders() {
+  const name = $('buyerName').value.trim();
+  const address = $('buyerAddr').value.trim();
+  if (!name) return showMsg('fillMsg', '请填写下单人姓名');
+  if (!address) return showMsg('fillMsg', '请填写收货地址');
+  const items = [...document.querySelectorAll('.item-card')].map((c) => ({
+    category: c.querySelector('.it-cat').value,
+    params: c.querySelector('.it-params').value.trim(),
+    price: parseFloat(c.querySelector('.it-price').value) || 0,
+  })).filter((it) => it.params || it.price > 0);
+  if (!items.length) return showMsg('fillMsg', '请至少填写一件商品');
+  if (items.some((it) => !it.params || it.price <= 0)) return showMsg('fillMsg', '每件商品都要填参数和价格');
+  try {
+    const { count } = await api('submit', { password: PASSWORD, name, address, items });
+    showMsg('fillMsg', `✅ 提交成功，共 ${count} 单`, true);
+    $('itemsBox').innerHTML = '';
+    addItem();
+  } catch (e) { showMsg('fillMsg', e.message); }
+}
+
+// ---------- 我的订单 ----------
+async function loadMy() {
+  const name = $('queryName').value.trim();
+  if (!name) return showMsg('myMsg', '请输入姓名');
+  try {
+    const { orders } = await api('my', { password: PASSWORD, name });
+    $('myList').classList.remove('hidden');
+    $('myOrders').innerHTML = orders.length ? orders.map(orderHtml).join('') : '<div class="empty">本活动下没有找到你的订单</div>';
+  } catch (e) { showMsg('myMsg', e.message); }
+}
+
+function orderHtml(o) {
+  const ret = o.status === '已退单';
+  const time = o.time ? new Date(o.time).toLocaleString('zh-CN', { hour12: false }) : '';
+  return `<div class="order">
+    <div class="row"><b>${o.category}｜${o.params}</b><span class="badge ${ret ? 'ret' : 'ok'}">${o.status || '正常'}</span></div>
+    <div class="row muted"><span>${time}</span><b>¥${o.price}</b></div>
+    <div class="row muted"><span>物流单号：${o.tracking || '未填写'}</span></div>
+    ${ret ? '' : `<div class="row" style="margin-top:8px">
+      <input style="flex:1" placeholder="补填物流单号" value="${o.tracking || ''}" id="trk_${o.recordId}">
+      <button class="btn-outline" onclick="saveTracking('${o.recordId}')">保存</button>
+      <button class="btn-danger" onclick="returnOrder('${o.recordId}')">退单</button>
+    </div>`}
+  </div>`;
+}
+
+async function saveTracking(recordId) {
+  const tracking = $('trk_' + recordId).value.trim();
+  if (!tracking) return alert('请输入物流单号');
+  try {
+    await api('tracking', { password: PASSWORD, recordId, name: $('queryName').value.trim(), tracking });
+    alert('✅ 物流单号已保存');
+  } catch (e) { alert(e.message); }
+}
+
+async function returnOrder(recordId) {
+  const yes = await confirmDialog('确认退单吗？退单后该订单将标记为「已退单」，不再计入统计。');
+  if (!yes) return;
+  try {
+    await api('return', { password: PASSWORD, recordId, name: $('queryName').value.trim() });
+    loadMy();
+  } catch (e) { alert(e.message); }
+}
+
+// ---------- 管理 ----------
+async function adminLogin() {
+  const pwd = $('adminPwd').value.trim();
+  try {
+    await api('admin/list', { adminPassword: pwd });
+    ADMIN_PWD = pwd;
+    sessionStorage.setItem('ap', pwd);
+    $('adminGate').classList.add('hidden');
+    $('adminPanel').classList.remove('hidden');
+    loadAdminActs();
+  } catch (e) { showMsg('adminMsg', e.message); }
+}
+
+async function loadAdminActs() {
+  const { activities } = await api('admin/list', { adminPassword: ADMIN_PWD });
+  $('adminActs').innerHTML = activities.length ? activities.map((a) => `
+    <div class="order">
+      <div class="row">
+        <span><b>${a.name}</b> <span class="badge ${a.status === '开放中' ? 'ok' : 'ret'}">${a.status}</span></span>
+        ${a.status === '开放中' ? `<button class="btn-danger" onclick="closeActivity('${a.recordId}')">关闭</button>` : ''}
+      </div>
+      <div class="row">
+        <span class="pwd-chip">口令：${a.password} <button onclick="copyPwd('${a.password}')">复制</button></span>
+        ${a.status === '开放中' ? `<button class="btn-outline" onclick="changePwd('${a.recordId}','${a.password}')">改口令</button>` : ''}
+      </div>
+    </div>`).join('') : '<div class="empty">暂无活动</div>';
+}
+
+function copyPwd(p) {
+  navigator.clipboard?.writeText(p).then(() => alert('口令已复制：' + p)).catch(() => prompt('口令：', p));
+}
+
+async function createActivity() {
+  const name = $('newActName').value.trim();
+  if (!name) return alert('请输入活动名称');
+  try {
+    const { password } = await api('admin/activity', {
+      adminPassword: ADMIN_PWD, name, actPassword: $('newActPwd').value.trim(),
+    });
+    $('newActName').value = '';
+    $('newActPwd').value = '';
+    loadAdminActs();
+    alert('✅ 活动已创建\n买手口令：' + password);
+  } catch (e) { alert(e.message); }
+}
+
+async function changePwd(recordId, old) {
+  const np = prompt('输入新口令（当前：' + old + '）');
+  if (!np || !np.trim() || np.trim() === old) return;
+  try {
+    await api('admin/password', { adminPassword: ADMIN_PWD, recordId, newPassword: np.trim() });
+    loadAdminActs();
+    alert('✅ 口令已修改，旧口令即刻失效');
+  } catch (e) { alert(e.message); }
+}
+
+async function closeActivity(recordId) {
+  const yes = await confirmDialog('关闭后该活动口令立即失效，买手无法再继续填报；已有订单不受影响。确认关闭？');
+  if (!yes) return;
+  try {
+    await api('admin/close', { adminPassword: ADMIN_PWD, recordId });
+    loadAdminActs();
+  } catch (e) { alert(e.message); }
+}
+
+// 已存口令则直接进入
+if (PASSWORD && ACTIVITY) { enterMain(); }
+</script>
+</body>
+</html>
