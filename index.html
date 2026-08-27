@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>买手订单填报</title>
+<title>订单登记</title>
 <style>
+  /* 口令框：用 text 类型（password 类型手机禁中文输入法），用 CSS 遮罩成圆点 */
+  .pwd-mask { -webkit-text-security: disc; }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
   .container { max-width: 480px; margin: 0 auto; padding: 16px; }
@@ -52,14 +54,14 @@
 </style>
 </head>
 <body>
-<h1>📦 买手订单填报</h1>
+<h1>📦 订单登记</h1>
 <p class="subtitle">下单后请妥善保管你的姓名，用于查询与补单号</p>
 
 <!-- 口令页 -->
 <div class="container" id="gateView">
   <div class="card">
     <label>活动口令</label>
-    <input type="password" id="pwdInput" placeholder="请输入本次活动的口令" autocomplete="off">
+    <input type="text" id="pwdInput" class="pwd-mask" placeholder="请输入本次活动的口令（支持中文）" autocomplete="off">
     <button class="btn btn-primary" onclick="login()">进 入</button>
     <div class="msg" id="gateMsg"></div>
     <div style="text-align:center;margin-top:16px">
@@ -106,7 +108,7 @@
   <div id="tab-admin" class="hidden">
     <div class="card" id="adminGate">
       <label>管理口令</label>
-      <input type="password" id="adminPwd" placeholder="管理员专用">
+      <input type="text" id="adminPwd" class="pwd-mask" placeholder="管理员专用">
       <button class="btn btn-primary" onclick="adminLogin()">进入管理</button>
       <div class="msg" id="adminMsg"></div>
     </div>
