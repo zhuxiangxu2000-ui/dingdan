@@ -18,10 +18,12 @@
   textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
   input:focus, select:focus, textarea:focus { outline: none; border-color: #3370ff; background: #fff; }
   .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
   .btn-primary { background: #3370ff; color: #fff; }
   .btn-primary:active { background: #2860e0; }
   .btn-danger { background: #f54a45; color: #fff; padding: 8px 14px; font-size: 14px; width: auto; display: inline-block; margin-top: 0; }
   .btn-outline { background: #fff; color: #3370ff; border: 1px solid #3370ff; padding: 8px 14px; font-size: 14px; width: auto; display: inline-block; margin-top: 0; }
+  .btn-outline:disabled { opacity: .55; }
   .tabs { display: flex; background: #fff; border-radius: 12px; padding: 4px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
   .tab { flex: 1; text-align: center; padding: 10px; border-radius: 9px; font-size: 15px; color: #666; cursor: pointer; }
   .tab.active { background: #3370ff; color: #fff; font-weight: 600; }
@@ -62,7 +64,7 @@
   <div class="card">
     <label>活动口令</label>
     <input type="text" id="pwdInput" class="pwd-mask" placeholder="请输入本次活动的口令（支持中文）" autocomplete="off">
-    <button class="btn btn-primary" onclick="login()">进 入</button>
+    <button class="btn btn-primary" onclick="withBusy(this,'进入中…',login)">进 入</button>
     <div class="msg" id="gateMsg"></div>
     <div style="text-align:center;margin-top:16px">
       <a href="javascript:void(0)" onclick="enterAdminDirect()" style="color:#bbb;font-size:13px;text-decoration:none">管理员入口 ›</a>
@@ -89,7 +91,7 @@
     </div>
     <div id="itemsBox"></div>
     <div class="add-item" onclick="addItem()">＋ 再加一件商品</div>
-    <button class="btn btn-primary" onclick="submitOrders()">提交订单</button>
+    <button class="btn btn-primary" onclick="withBusy(this,'提交中，请稍候…',submitOrders)">提交订单</button>
     <div class="msg" id="fillMsg"></div>
   </div>
 
@@ -109,7 +111,7 @@
     <div class="card" id="adminGate">
       <label>管理口令</label>
       <input type="text" id="adminPwd" class="pwd-mask" placeholder="管理员专用">
-      <button class="btn btn-primary" onclick="adminLogin()">进入管理</button>
+      <button class="btn btn-primary" onclick="withBusy(this,'进入中…',adminLogin)">进入管理</button>
       <div class="msg" id="adminMsg"></div>
     </div>
     <div id="adminPanel" class="hidden">
@@ -118,7 +120,7 @@
         <input id="newActName" placeholder="活动名称，例如：0827-iPhone16专场">
         <label>活动口令（留空则自动生成）</label>
         <input id="newActPwd" placeholder="给买手的口令，如 iphone827">
-        <button class="btn btn-primary" onclick="createActivity()">创建活动（自动建表）</button>
+        <button class="btn btn-primary" onclick="withBusy(this,'创建中…',createActivity)">创建活动（自动建表）</button>
       </div>
       <div class="card">
         <label>活动列表</label>
@@ -163,6 +165,15 @@ function showMsg(id, text, ok) {
   const el = $(id);
   el.textContent = text;
   el.className = 'msg ' + (ok ? 'ok' : 'error');
+}
+
+// 按钮防重复点击：请求期间禁用并显示提示文字
+async function withBusy(btn, busyText, fn) {
+  if (btn.disabled) return;
+  const old = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = busyText;
+  try { await fn(); } finally { btn.disabled = false; btn.textContent = old; }
 }
 
 function confirmDialog(text) {
@@ -267,7 +278,7 @@ function orderHtml(o) {
     <div class="row muted"><span>物流单号：${o.tracking || '未填写'}</span></div>
     ${ret ? '' : `<div class="row" style="margin-top:8px">
       <input style="flex:1" placeholder="补填物流单号" value="${o.tracking || ''}" id="trk_${o.recordId}">
-      <button class="btn-outline" onclick="saveTracking('${o.recordId}')">保存</button>
+      <button class="btn-outline" onclick="withBusy(this,'保存中',()=>saveTracking('${o.recordId}'))">保存</button>
       <button class="btn-danger" onclick="returnOrder('${o.recordId}')">退单</button>
     </div>`}
   </div>`;
